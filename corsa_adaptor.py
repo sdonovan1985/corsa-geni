@@ -22,10 +22,10 @@ class CorsaAdaptor(object):
         self._setup_logger(options.logfile, 'adaptor')
         
         # Setup DB
-        self.db = self._setup_database(options.database)
-        self.switch_table = self.db['switches']
-        self.bridge_table = self.db['bridges']
-        self.connection_table = self.db['connections']
+        self._setup_database(options.database)
+
+        # Parse Config File
+        self._parse_config_file(options.config)
         
         # Setup Flask nonsense
 
@@ -50,11 +50,47 @@ class CorsaAdaptor(object):
 
     def _setup_database(self, db_location):
         ''' Returns DB link. '''
-        db = dataset.connect('sqlite:///' + db_location, 
-                             engine_kwargs={'connect_args':
-                                            {'check_same_thread':False}})
-        return db
-        
+        self.db = dataset.connect('sqlite:///' + db_location, 
+                                  engine_kwargs={'connect_args':
+                                                 {'check_same_thread':False}})
+        self.switch_table = self.db['switches']
+        self.bridge_table = self.db['bridges']
+        self.connection_table = self.db['connections']
+
+    def _parse_config_file(self, config_file):
+        ''' Config file has general configuration, such as href prefix.
+            Config file has Switch information
+             - Name
+             - Connection info 
+             - Neighbors
+        '''
+        pass
+
+    # Read https://dataset.readthedocs.io/en/latest/api.html#dataset.Table.upsert for how upsert works
+    def upsert_switch(self, switch):
+        pass
+
+    def upsert_neighbor(self, neighbor):
+        pass
+
+    def upsert_bridge(self, bridge):
+        pass
+
+    def upsert_connection(self, connection):
+        pass
+
+
+    def get_switch(self, switch_name):
+        pass
+
+    def get_neighbor(self, switch_name, neighbor_name):
+        pass
+
+    def get_bridge(self, switch_name, bridge_name):
+        pass
+
+    def get_connection(self, switch_name, bridge_name, connection_name):
+        pass
         
     # FLASK main loop
     def _main_loop(self):
