@@ -59,8 +59,32 @@ class Switch(object):
     def add_neighbor(self, neighbor):
         self.neighbors.append(neighbor)
 
-    def add_bridge(self, bridge):
+    def create_bridge(self, name,
+                      controller_addr=None, controller_port=None, dpid=None):
+        bridge_href = self.href + "/bridges/" + name
+        bridge = Bridge(name, href, self.connection,
+                        dpid, controller_addr, controller_port)
+
+        # Make REST calls to instantiate this new bridge
+        #FIXME
+        
+        # Finally, add it to the local list of bridges
         self.bridges.append(bridge)
+
+    def remove_bridge(self, name):
+        bridge = None
+        for b in self.bridges:
+            if b.get_name() == name:
+                bridge = b
+                break
+        if bridge == None:
+            raise Exception("%s not in list of bridges:\n%s" % (name,
+                                                        self.get_bridges()))
+        # Make REST calls to delete bridge
+        #FIXME
+
+        # Finally, remove from local list of bridges
+        self.bridges.remove(bridge)
 
     def to_json(self):
         pass #FIXME

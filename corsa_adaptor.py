@@ -2,9 +2,7 @@
 # Corsa-at-GENI project
 
 import logging
-import dataset
 import json
-import cPickle as pickle
 from threading import Timer, Lock, Thread
 from datetime import datetime, timedelta
 
@@ -21,14 +19,14 @@ class CorsaAdaptor(object):
     def __init__(self, options):
         # Setup logging
         self._setup_logger(options.logfile, 'adaptor')
-        
-        # Setup DB
-        self._setup_database(options.database)
 
+        # Setup local storage
+        self.switches = {}
+        
         # Parse Config File. The following will be set:
         #   - self.base_url
         self._parse_config_file(options.config)
-        
+
         
         # Setup Flask nonsense
 
@@ -50,16 +48,7 @@ class CorsaAdaptor(object):
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(console)
         self.logger.addHandler(logfile)
-
-    def _setup_database(self, db_location):
-        ''' Returns DB link. '''
-        self.db = dataset.connect('sqlite:///' + db_location, 
-                                  engine_kwargs={'connect_args':
-                                                 {'check_same_thread':False}})
-        self.switch_table = self.db['switches']
-        self.bridge_table = self.db['bridges']
-        self.connection_table = self.db['connections']
-
+        
     def _parse_config_file(self, config_file):
         ''' Config file has general configuration, such as href prefix.
             Config file has information for Switches
@@ -97,37 +86,34 @@ class CorsaAdaptor(object):
                 neighbor_href = switch_href + "/neighbors/" + neighbor_name
                 neighbor_object = Neighbor(neighbor_name, neighbor_href,
                                            neighbor_vlans, neighbor_type)
-                self.upsert_neighbor(neighbor)
-                
+
                 switch.add_neighbor(neighbor)
-            # Insert switch into DB
-            self.upsert_switch(switch)
-
-    # Read https://dataset.readthedocs.io/en/latest/api.html#dataset.Table.upsert for how upsert works
-    def upsert_switch(self, switch):
-        pass
-
-    def upsert_neighbor(self, neighbor):
-        pass
-
-    def upsert_bridge(self, bridge):
-        pass
-
-    def upsert_connection(self, connection):
-        pass
-
+            # Save off switch
+            self.switches[switch_name] = switch
 
     def get_switch(self, switch_name):
-        pass
+        return self.switches[switch_name]
 
     def get_neighbor(self, switch_name, neighbor_name):
-        pass
+        neighbors = self.switches[switch_name].get_neighbors()
+        for n in neighbors:
+            if n.get_name() == neighbor_name:
+                return n
+        return None
 
     def get_bridge(self, switch_name, bridge_name):
-        pass
+        bridges = self.get_switch(switch_name).get_bridges()
+        for b in bridges:
+            if b.get_name() == bridge_name:
+                return b
+        return None
 
     def get_connection(self, switch_name, bridge_name, connection_name):
-        pass
+        bridge = self.get_bridge(switch_name, bridge_name)
+        for c in bridge.get_connections():
+            if c.get_name() == connection_name:
+                return c
+        return None
         
     # FLASK main loop
     def _main_loop(self):
@@ -142,9 +128,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-d", "--database", dest="database", type=str, 
-                        action="store", help="Specifies the database ", 
-                        default=":memory:")
     parser.add_argument("-c", "--config-file", dest="config", type=str, 
                         action="store", help="Specifies the configuration file")
 

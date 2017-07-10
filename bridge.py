@@ -35,6 +35,7 @@ class Bridge(object):
         self.controller_addr = controller_addr
         self.controller_port = controller_port
         self.connections = connections
+        self.current_vport = 0
 
     def __str__(self):
         retstr = "%s\n%s, DPID: %s, Controller: %s:%d" % (self.href, self.name,
@@ -70,7 +71,23 @@ class Bridge(object):
     def get_connections(self):
         return self.connections
 
-    def add_connection(self, connection):
+    def add_connection(self, dstname, physport, dstvlan):
+        # NOTE: this doesn't check for whether or not this is a valid thing to
+        # do. The user of this function should be confirming with the switch
+        # that a particular VLAN/Port combination is valid.
+
+        # Find open virtual port number
+        vport = self.current_vport
+        self.current_vport += 1
+
+        # Create the Connection object
+        connection_href = self.href + "/connections/" + str(dstname)
+        cxn = Connection(connection_href, dstname, physport, dstvlan, vport)
+
+        # Make REST calls to instantiate this new connection
+        #FIXME
+        
+        # Finally, add it ot the local list of bridges
         self.connections.append(connection)
 
     def set_dpid(self, dpid):
