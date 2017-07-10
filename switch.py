@@ -2,7 +2,8 @@
 # Corsa-at-GENI project
 
 from bridge import Bridge
-from neighbor import Neighbor
+from neighbor import *
+import re
 
 class Switch(object):
     ''' Each physical switch will be represented by a switch object.
@@ -26,7 +27,13 @@ class Switch(object):
         self.connection = connection
 
     def __str__(self):
-        pass #FIXME
+        retstr  = "SWITCH: %s\n" % self.name
+        retstr += "  %s" % self.href
+        retstr += "  NEIGHBORS: %s" % re.sub("\n", "\n    ",
+                                             str(self.neighbors))
+        retstr += "  BRIDGES: %s" % re.sub("\n", "\n    ",
+                                           str(self.bridges))
+        return retstr
     
     def get_name(self):
         return self.name
@@ -42,6 +49,12 @@ class Switch(object):
 
     def get_connection_info(self):
         return self.connection
+
+    def set_connection_info(self, cxn_info):
+        if type(cxn_info) != ConnectionInfo:
+            raise Exception("cxn_info is not ConnectionInfo. type:%s, value:%s",
+                            type(cxn_info), str(ConnectionInfo))
+        self.connection = cxn_info
 
     def add_neighbor(self, neighbor):
         self.neighbors.append(neighbor)

@@ -37,7 +37,14 @@ class Bridge(object):
         self.connections = connections
 
     def __str__(self):
-        pass #FIXME
+        retstr = "%s\n%s, DPID: %s, Controller: %s:%d" % (self.href, self.name,
+                                                          self.dpid,
+                                                          self.controller_addr,
+                                                          self.controller_port)
+        retstr += "\n  CONNECTIONS:"
+        for cxn in self.connections:
+            retstr += "\n    %s" % str(cxn)
+        return retstr
 
     def __del__(self):
         pass #FIXME

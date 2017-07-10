@@ -9,7 +9,8 @@ class ConnectionInfo(object):
         self.rest_key = rest_key
 
     def __str__(self):
-        pass #FIXME
+        retstr = "%s:%s" % (self.address, self.rest_key)
+        return retstr
 
     def get_address(self):
         return address

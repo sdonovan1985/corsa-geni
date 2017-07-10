@@ -3,6 +3,7 @@
 
 import logging
 import dataset
+import json
 import cPickle as pickle
 from threading import Timer, Lock, Thread
 from datetime import datetime, timedelta
@@ -24,8 +25,10 @@ class CorsaAdaptor(object):
         # Setup DB
         self._setup_database(options.database)
 
-        # Parse Config File
+        # Parse Config File. The following will be set:
+        #   - self.base_url
         self._parse_config_file(options.config)
+        
         
         # Setup Flask nonsense
 
@@ -59,12 +62,46 @@ class CorsaAdaptor(object):
 
     def _parse_config_file(self, config_file):
         ''' Config file has general configuration, such as href prefix.
-            Config file has Switch information
+            Config file has information for Switches
              - Name
              - Connection info 
              - Neighbors
         '''
-        pass
+        with open(config_filename) as data_file:
+            data = json.load(data_file)
+
+        self.base_url = data['adaptor-href-base']
+
+        for switch in data['switches']:
+            switch_name = data['switches'][switch]['name']
+            connection_info = data['switches'][switch]['connection-info']
+            neighbors = data['switches'][switch]['neighbors']
+
+            # Determine the correct href for the switch we're creating
+            switch_href = self.base_url + "/switches/" + switch_name
+            
+            # Create Switch object
+            switch = Switch(switch_name, switch_href)
+            
+            # Create the ConnectionInfo object and add it to the switch
+            cxn_info_object = ConnectionInfo(connection_info['address'],
+                                             connection_info['rest_key'])
+            switch.set_connection_info(cxn_info_object)
+
+
+            # Create all the neighbors and add them to the switch object
+            for neighbor in neighbors:
+                neighbor_name = neighbor['name']
+                neighbor_type = neighbor['type']
+                neighbor_vlans = neighbor['vlans']
+                neighbor_href = switch_href + "/neighbors/" + neighbor_name
+                neighbor_object = Neighbor(neighbor_name, neighbor_href,
+                                           neighbor_vlans, neighbor_type)
+                self.upsert_neighbor(neighbor)
+                
+                switch.add_neighbor(neighbor)
+            # Insert switch into DB
+            self.upsert_switch(switch)
 
     # Read https://dataset.readthedocs.io/en/latest/api.html#dataset.Table.upsert for how upsert works
     def upsert_switch(self, switch):
@@ -118,7 +155,7 @@ if __name__ == '__main__':
     options = parser.parse_args()
     print options
  
-    if not options.manifest:
+    if not options.config:
         parser.print_help()
         exit()
         

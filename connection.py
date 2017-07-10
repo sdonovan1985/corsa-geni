@@ -21,7 +21,9 @@ class Connection(object):
         self.vport = vport
 
     def __str__(self):
-        pass #FIXME
+        retstr = ("%s %s, Physical Port: %d, VLAN: %d, Virtual Port: %s" %
+                  (self.href, self.name, self.physport, self.vlan, self.vport))
+        return retstr
 
     def get_href(self):
         return self.href
