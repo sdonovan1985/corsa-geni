@@ -17,6 +17,3 @@ class ConnectionInfo(object):
 
     def get_rest_key(self):
         return rest_key
-
-    def to_json(self):
-        pass #FIXME

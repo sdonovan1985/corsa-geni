@@ -18,8 +18,8 @@ class Neighbor(object):
         self.type = type
 
     def __str__(self):
-        retstr = "%s %s TYPE:%s VLANS: %s" % (self.href, self.name,
-                                               self.type, self.vlans)
+        retstr = "NEIGHBOR %s %s TYPE:%s VLANS: %s" % (self.href, self.name,
+                                                       self.type, self.vlans)
         return retstr
 
     def get_name(self):

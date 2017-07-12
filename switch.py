@@ -29,10 +29,14 @@ class Switch(object):
     def __str__(self):
         retstr  = "SWITCH: %s\n" % self.name
         retstr += "  %s" % self.href
-        retstr += "  NEIGHBORS: %s" % re.sub("\n", "\n    ",
-                                             str(self.neighbors))
-        retstr += "  BRIDGES: %s" % re.sub("\n", "\n    ",
-                                           str(self.bridges))
+        n = ""
+        for neighbor in self.neighbors:
+            n += "\n" + str(neighbor)
+        retstr += "\n  NEIGHBORS: %s" % re.sub("\n", "\n    ", n)
+        b = ""
+        for bridge in self.bridges:
+            b += "\n" + str(bridge)
+        retstr += "\n  BRIDGES: %s" % re.sub("\n", "\n    ", b)
         return retstr
     
     def get_name(self):

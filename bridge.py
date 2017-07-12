@@ -38,7 +38,8 @@ class Bridge(object):
         self.current_vport = 0
 
     def __str__(self):
-        retstr = "%s\n%s, DPID: %s, Controller: %s:%d" % (self.href, self.name,
+        retstr = "BRIDGE %s\n%s, DPID: %s, Controller: %s:%d" % (self.href,
+                                                          self.name,
                                                           self.dpid,
                                                           self.controller_addr,
                                                           self.controller_port)
@@ -163,10 +164,10 @@ class Bridge(object):
         '''
         connection_json = []
         for cxn in self.connections:
-            connection_json += cxn.to_json()
+            connection_json.append(cxn.to_json())
 
         retval = {
-            'bridge':self.name: 
+            'bridge':self.name,
             'href': self.href,
             'controller-addr': self.controller_addr,
             'controller-port': self.controller_port,
