@@ -59,6 +59,14 @@ class Switch(object):
     def add_neighbor(self, neighbor):
         self.neighbors.append(neighbor)
 
+    def get_bridge_list(self):
+        # This is used for querying the switch for existing bridges that have
+        # been configured, so that a free name (e.g., "sw3") can be chosen.
+        pass
+
+    def _get_bridge_REST_helper(self):
+        pass
+        
     def create_bridge(self, name,
                       controller_addr=None, controller_port=None, dpid=None):
         bridge_href = self.href + "/bridges/" + name
@@ -70,6 +78,24 @@ class Switch(object):
         
         # Finally, add it to the local list of bridges
         self.bridges.append(bridge)
+
+        
+    def _add_bridge_REST_helper(self, bridge):
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+        response = requests.post(bridge.get_name()+'api/v1/bridges',
+                                 {'bridge' : bridge.get_name(),
+                                  'dpid' : bridge.get_dpid(),
+                                  'subtype' : 'openflow',
+                                  'resources' : 1}, #FIXME: fixed value
+                                 headers={'Authorization':rest_key},
+                                 verify=False) #FIXME: fixed value
+
+        if response.status_code != 200:
+            #ERROR!
+            raise Exception("_add_bridge Response %d: %s" %
+                            (response.status_code, str(response)))
+        return response # May not be used
 
     def remove_bridge(self, name):
         bridge = None
@@ -85,6 +111,20 @@ class Switch(object):
 
         # Finally, remove from local list of bridges
         self.bridges.remove(bridge)
+
+    def _remove_bridge_REST_helper(self, bridge):
+        base_url = self.connection.get_address()
+        rest_key = self.connaction.get_rest_key()
+        response = requests.delete(url+'api/v1/bridges/'+str(bridge.get_name()),
+                                   headers={'Authorization':rest_key},
+                                   verify=False) #FIXME: fixed value
+
+        if response.status_code != 100000: #FIXME - What's the good number?
+            raise Exception("_remove_bridge Response %d: %s" %
+                            (response.status_code, str(response)))
+
+        return response
+
 
     def to_json(self):
         pass #FIXME
