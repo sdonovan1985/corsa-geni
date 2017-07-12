@@ -62,10 +62,22 @@ class Switch(object):
     def get_bridge_list(self):
         # This is used for querying the switch for existing bridges that have
         # been configured, so that a free name (e.g., "sw3") can be chosen.
-        pass
+
+        bridge_list = self._get_bridge_REST_helper()
+        return bridge_list
 
     def _get_bridge_REST_helper(self):
-        pass
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+        response = requests.get(url+'api/v1/bridges',
+                                headers={'Authorization':rest_key},
+                                verify=False)
+
+        bridge_list = []
+        for entry in response['links']:
+            bridge_list.append(entry)
+
+        return bridge_list
         
     def create_bridge(self, name,
                       controller_addr=None, controller_port=None, dpid=None):
@@ -79,11 +91,12 @@ class Switch(object):
         # Finally, add it to the local list of bridges
         self.bridges.append(bridge)
 
+        return bridge
         
     def _add_bridge_REST_helper(self, bridge):
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
-        response = requests.post(bridge.get_name()+'api/v1/bridges',
+        response = requests.post(url+'api/v1/bridges',
                                  {'bridge' : bridge.get_name(),
                                   'dpid' : bridge.get_dpid(),
                                   'subtype' : 'openflow',

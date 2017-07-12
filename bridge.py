@@ -85,11 +85,60 @@ class Bridge(object):
         cxn = Connection(connection_href, dstname, physport, dstvlan, vport)
 
         # Make REST calls to instantiate this new connection
-        #FIXME
+        self.add_connection_rest_helper(physport, vport, dstvlan)
         
         # Finally, add it ot the local list of bridges
         self.connections.append(connection)
 
+        return connection
+
+    def add_connection_REST_helper(self, port, vport, vlan_id):
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+        response = requests.post(url+'api/v1/bridges/'+self.name+'/tunnels',
+                                 {'port' : port,
+                                  'ofport' : vport,
+                                  'vlan-id' : vlan_id},
+                                 headers={'authorization':rest_key},
+                                 verify=False) #FIXME: fixed value
+
+        if response.status_code != 200:
+            #ERROR!
+            raise Exception("_add_connection Response %d: %s" %
+                            (response.status_code, str(response)))
+        return response # May not be used
+
+    def remove_connection(self, dstname):
+        # NOTE: this doesn't check to see if the connection already exists on
+        # the bridge (it does check if it exists in the Bridge data structure).
+
+        # Find the connection in the local list of connections
+        vport = None
+        for cxn in self.connections:
+            if cxn.get_name() == dstname:
+                vport = cxn.get_vport()
+                break
+        if vport == None:
+            raise Exception("dstname %s doesn't exist in connections:\n%s" %
+                            (dstname, self.connections))
+
+        # Make REST calls to delete the connection
+        self.remove_connection_REST_helper(vport)
+
+    def remove_connection_REST_helper(self, vport):
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+        response = requests.delete(url+'api/v1/bridges/'+self.name+
+                                   '/tunnels/'+vport,
+                                 headers={'authorization':rest_key},
+                                 verify=False) #FIXME: fixed value
+
+        if response.status_code != 10000: #FIXME - What's the good number?
+            #ERROR!
+            raise Exception("_remove_connection Response %d: %s" %
+                            (response.status_code, str(response)))
+        return response # May not be used
+    
     def set_dpid(self, dpid):
         self.dpid = dpid
 
