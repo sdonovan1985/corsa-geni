@@ -82,10 +82,12 @@ class CorsaAdaptor(object):
             for neighbor in neighbors:
                 neighbor_name = neighbor['name']
                 neighbor_type = neighbor['type']
+                neighbor_physport = neighbor['port']
                 neighbor_vlans = neighbor['vlans']
                 neighbor_href = switch_href + "/neighbors/" + neighbor_name
                 neighbor_object = Neighbor(neighbor_name, neighbor_href,
-                                           neighbor_vlans, neighbor_type)
+                                           neighbor_physport, neighbor_vlans,
+                                           neighbor_type)
 
                 switch.add_neighbor(neighbor)
             # Save off switch

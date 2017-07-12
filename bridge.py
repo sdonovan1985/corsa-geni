@@ -146,9 +146,35 @@ class Bridge(object):
         self.controller_addr = controller_addr
         self.controller_port = controller_port
 
-    def delete_bridge(self, ...):
-        pass #FIXME - is this even necessary?
-
     def to_json(self):
-        pass #FIXME
+        '''
+        {
+            'bridge':'sw1'
+            'href': 'https://1.2.3.4/switches/corsa-a/bridges/sw1',
+            'controller-addr': '2.3.4.5',
+            'controller-port': '6633',
+            'dpid': 'abcdef12345678',
+            'connections':
+              [
+                <connection1>,
+                <connection2>,
+              ]
+        }
+        '''
+        connection_json = []
+        for cxn in self.connections:
+            connection_json += cxn.to_json()
+
+        retval = {
+            'bridge':self.name: 
+            'href': self.href,
+            'controller-addr': self.controller_addr,
+            'controller-port': self.controller_port,
+            'dpid': self.dpid,
+            'connections': connection_json
+        } 
+        
+        return retval
+
+
     

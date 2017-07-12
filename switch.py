@@ -140,5 +140,37 @@ class Switch(object):
 
 
     def to_json(self):
-        pass #FIXME
+        '''
+        {
+            'switch':'sox-switch',
+            'href':'https://1.2.3.4/switches/sox-switch',
+            'neighbors':
+                [
+                  <neighbor1>,
+                  <neighbor2>
+                ],
+            'bridges':
+                [
+                  <bridge1>,
+                  <bridge2>
+                ]
+        }
+        '''
+        neighbors_json = []
+        for n in self.neighbors:
+            neighbors_json.append(n.to_json())
+
+        bridges_json = []
+        for b in self.bridges:
+            bridges_json.append(b.to_json())
+
+        retval = {
+            'switch':self.name,
+            'href':self.href,
+            'neighbors':neighbors_json,
+            'bridges':bridges_json
+        }
+
+        return retval
+            
 

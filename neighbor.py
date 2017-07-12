@@ -10,9 +10,10 @@ class Neighbor(object):
         networks or other switches.
     '''
 
-    def __init__(self, name, href, vlans, type=NETWORK):
+    def __init__(self, name, href, vlans, physport, type=NETWORK):
         self.name = name
         self.href = href
+        self.physport = physport
         self.vlans = vlans
         self.type = type
 
@@ -32,4 +33,23 @@ class Neighbor(object):
 
     def get_type(self):
         return self.type
-                 
+
+    def to_json(self):
+        '''
+        {
+            'neighbor':'gatech-ig',
+            'href': 'https://1.2.3.4/switches/corsa-a/neighbors/gatech-ig',
+            'physical-port': 2,
+            'vlans': [3535, 3536, 3537, 3538, 3539],
+            'type': 'network'
+        }
+        '''
+        retval = {
+            'neighbor':self.name,
+            'href':self.href,
+            'physical-port':self.physport,
+            'vlans':self.vlans,
+            'type':self.type
+        }
+
+        return retval

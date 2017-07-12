@@ -41,4 +41,22 @@ class Connection(object):
         return self.vport
 
     def to_json(self):
-        pass #FIXME
+        '''
+        {
+            'connection':'clemson',
+            'href':'https://1.2.3.4/switches/corsa-a/bridges/sw1/connections/clemson',
+            'physical-port':3,
+            'vlan':3535,
+            'virtual-port':6,
+        }
+        '''
+        retval = {
+            'connection':self.name,
+            'href':self.href,
+            'physical-port':self.physport,
+            'vlan':self.vlan,
+            'virtual-port':self.vport
+        }
+
+        return retval
+        
