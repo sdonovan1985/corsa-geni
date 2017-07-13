@@ -25,16 +25,19 @@ class Connection(object):
                   (self.href, self.name, self.physport, self.vlan, self.vport))
         return retstr
 
+    def __repr__(self):
+        return self.__str__()
+    
     def get_href(self):
         return self.href
 
-    def get_destination_name(self):
+    def get_name(self):
         return self.name
 
-    def get_desitnation_physical_port(self):
+    def get_physical_port(self):
         return self.physport
     
-    def get_destination_vlan(self):
+    def get_vlan(self):
         return self.vlan
     
     def get_virtual_port(self):
@@ -44,7 +47,7 @@ class Connection(object):
         '''
         {
             'connection':'clemson',
-            'href':'https://1.2.3.4/switches/corsa-a/bridges/sw1/connections/clemson',
+            'href':'https://1.2.3.4/switches/corsa-a/bridges/br1/connections/clemson',
             'physical-port':3,
             'vlan':3535,
             'virtual-port':6,

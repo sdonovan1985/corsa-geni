@@ -22,6 +22,9 @@ class Neighbor(object):
                                                        self.type, self.vlans)
         return retstr
 
+    def __repr__(self):
+        return self.__str__()
+    
     def get_name(self):
         return self.name
 

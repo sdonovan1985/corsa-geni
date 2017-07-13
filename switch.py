@@ -2,8 +2,15 @@
 # Corsa-at-GENI project
 
 from bridge import Bridge
-from neighbor import *
+from connection_info import ConnectionInfo
+from neighbor import Neighbor
 import re
+import requests
+import json
+
+# Disable warnings #FIXME!
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class Switch(object):
     ''' Each physical switch will be represented by a switch object.
@@ -38,6 +45,9 @@ class Switch(object):
             b += "\n" + str(bridge)
         retstr += "\n  BRIDGES: %s" % re.sub("\n", "\n    ", b)
         return retstr
+
+    def __repr__(self):
+        return self.__str__()
     
     def get_name(self):
         return self.name
@@ -73,12 +83,14 @@ class Switch(object):
     def _get_bridge_REST_helper(self):
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
-        response = requests.get(url+'api/v1/bridges',
+        response = requests.get(base_url+'/api/v1/bridges',
                                 headers={'Authorization':rest_key},
                                 verify=False)
 
+        print response.json()
+
         bridge_list = []
-        for entry in response['links']:
+        for entry in response.json()['links']:
             bridge_list.append(entry)
 
         return bridge_list
@@ -86,21 +98,21 @@ class Switch(object):
     def create_bridge(self, name,
                       controller_addr=None, controller_port=None, dpid=None):
         bridge_href = self.href + "/bridges/" + name
-        bridge = Bridge(name, href, self.connection,
+        bridge = Bridge(name, bridge_href, self.connection,
                         dpid, controller_addr, controller_port)
 
         # Make REST calls to instantiate this new bridge
-        #FIXME
+        self._create_bridge_REST_helper(bridge)
         
         # Finally, add it to the local list of bridges
         self.bridges.append(bridge)
 
         return bridge
         
-    def _add_bridge_REST_helper(self, bridge):
+    def _create_bridge_REST_helper(self, bridge):
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
-        response = requests.post(url+'api/v1/bridges',
+        response = requests.post(base_url+'/api/v1/bridges',
                                  {'bridge' : bridge.get_name(),
                                   'dpid' : bridge.get_dpid(),
                                   'subtype' : 'openflow',
@@ -108,10 +120,10 @@ class Switch(object):
                                  headers={'Authorization':rest_key},
                                  verify=False) #FIXME: fixed value
 
-        if response.status_code != 200:
+        if response.status_code != 201:
             #ERROR!
             raise Exception("_add_bridge Response %d: %s" %
-                            (response.status_code, str(response)))
+                            (response.status_code, json.dumps(response.json())))
         return response # May not be used
 
     def remove_bridge(self, name):
@@ -124,21 +136,22 @@ class Switch(object):
             raise Exception("%s not in list of bridges:\n%s" % (name,
                                                         self.get_bridges()))
         # Make REST calls to delete bridge
-        #FIXME
+        self._remove_bridge_REST_helper(bridge)
+        
 
         # Finally, remove from local list of bridges
         self.bridges.remove(bridge)
 
     def _remove_bridge_REST_helper(self, bridge):
         base_url = self.connection.get_address()
-        rest_key = self.connaction.get_rest_key()
-        response = requests.delete(url+'api/v1/bridges/'+str(bridge.get_name()),
+        rest_key = self.connection.get_rest_key()
+        response = requests.delete(base_url+'/api/v1/bridges/'+str(bridge.get_name()),
                                    headers={'Authorization':rest_key},
                                    verify=False) #FIXME: fixed value
 
-        if response.status_code != 100000: #FIXME - What's the good number?
+        if response.status_code != 204:
             raise Exception("_remove_bridge Response %d: %s" %
-                            (response.status_code, str(response)))
+                            (response.status_code, json.dumps(response.json())))
 
         return response
 

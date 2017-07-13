@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from bridge import Bridge
 from connection import Connection
 from switch import Switch
+from neighbor import Neighbor
 from connection_info import ConnectionInfo
 
 
@@ -56,15 +57,17 @@ class CorsaAdaptor(object):
              - Connection info 
              - Neighbors
         '''
-        with open(config_filename) as data_file:
+        with open(config_file) as data_file:
             data = json.load(data_file)
 
         self.base_url = data['adaptor-href-base']
 
+        print json.dumps(data, indent=2)
+        
         for switch in data['switches']:
-            switch_name = data['switches'][switch]['name']
-            connection_info = data['switches'][switch]['connection-info']
-            neighbors = data['switches'][switch]['neighbors']
+            switch_name = switch['name']
+            connection_info = switch['connection-info']
+            neighbors = switch['neighbors']
 
             # Determine the correct href for the switch we're creating
             switch_href = self.base_url + "/switches/" + switch_name
@@ -120,9 +123,56 @@ class CorsaAdaptor(object):
     # FLASK main loop
     def _main_loop(self):
         pass
-        
+
+    
     # FLASK Endpoints
 
+
+def testing(adaptor):
+    # Testing code.
+    print adaptor.switches
+
+    sw = adaptor.get_switch("sox-switch")
+    print "switch is:\n%s" % sw
+
+    print "\n\n\n\n"
+    print json.dumps(sw.get_bridge_list(), indent=2)
+    print "\n\n\n\n"
+
+
+    # Create bridge
+    sw.create_bridge("br50", "10.2.3.4", 6633, "100000")
+    
+    print "CREATED NEW BRIDGE:\n%s" % sw
+    
+    print "\n\n\n\n"
+    print json.dumps(sw.get_bridge_list(), indent=2)
+    print "\n\n\n\n"
+    
+    
+    
+    # Create tunnel
+    br = adaptor.get_bridge("sox-switch", "br50")
+    print br
+    
+    br.add_connection("temp1", 1,  2000)
+    br.add_connection("temp2", 1,  2001)
+
+    print br
+
+    # Delete tunnel
+    br.remove_connection("temp1")
+
+    print br
+    
+    
+    # Cleanup!
+    sw.remove_bridge("br50")
+    print sw
+    
+    print "\n\n\n\n"
+    print json.dumps(sw.get_bridge_list(), indent=2)
+    print "\n\n\n\n"
 
 
 
@@ -146,3 +196,7 @@ if __name__ == '__main__':
         
     adaptor = CorsaAdaptor(options)
     adaptor._main_loop()
+    #testing(adaptor)
+
+
+

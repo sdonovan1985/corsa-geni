@@ -13,7 +13,7 @@ class ConnectionInfo(object):
         return retstr
 
     def get_address(self):
-        return address
+        return self.address
 
     def get_rest_key(self):
-        return rest_key
+        return self.rest_key

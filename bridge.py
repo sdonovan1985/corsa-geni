@@ -3,6 +3,7 @@
 
 
 import requests
+import json
 from connection import Connection
 from connection_info import ConnectionInfo
 
@@ -48,9 +49,9 @@ class Bridge(object):
             retstr += "\n    %s" % str(cxn)
         return retstr
 
-    def __del__(self):
-        pass #FIXME
-
+    def __repr__(self):
+        return self.__str__()
+    
     def get_name(self):
         return self.name
 
@@ -77,36 +78,46 @@ class Bridge(object):
         # do. The user of this function should be confirming with the switch
         # that a particular VLAN/Port combination is valid.
 
+        # Make sure there isn't already a 'dstname' in the connections list
+        for cxn in self.connections:
+            if cxn.get_name() == dstname:
+                cxn_names = []
+                for c in self.connections:
+                    cxn_names.append(c.get_name())
+                
+                raise Exception("%s already exists as a connection name: %s" %
+                                (dstname, cxn_names))
+        
         # Find open virtual port number
-        vport = self.current_vport
         self.current_vport += 1
+        vport = self.current_vport
 
         # Create the Connection object
         connection_href = self.href + "/connections/" + str(dstname)
         cxn = Connection(connection_href, dstname, physport, dstvlan, vport)
 
         # Make REST calls to instantiate this new connection
-        self.add_connection_rest_helper(physport, vport, dstvlan)
+        self.add_connection_REST_helper(physport, vport, dstvlan)
         
         # Finally, add it ot the local list of bridges
-        self.connections.append(connection)
+        self.connections.append(cxn)
 
-        return connection
+        return cxn
 
     def add_connection_REST_helper(self, port, vport, vlan_id):
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
-        response = requests.post(url+'api/v1/bridges/'+self.name+'/tunnels',
+        response = requests.post(base_url+'/api/v1/bridges/'+self.name+'/tunnels',
                                  {'port' : port,
                                   'ofport' : vport,
                                   'vlan-id' : vlan_id},
                                  headers={'authorization':rest_key},
                                  verify=False) #FIXME: fixed value
 
-        if response.status_code != 200:
+        if response.status_code != 201:
             #ERROR!
             raise Exception("_add_connection Response %d: %s" %
-                            (response.status_code, str(response)))
+                            (response.status_code, json.dumps(response.json())))
         return response # May not be used
 
     def remove_connection(self, dstname):
@@ -117,7 +128,7 @@ class Bridge(object):
         vport = None
         for cxn in self.connections:
             if cxn.get_name() == dstname:
-                vport = cxn.get_vport()
+                vport = cxn.get_virtual_port()
                 break
         if vport == None:
             raise Exception("dstname %s doesn't exist in connections:\n%s" %
@@ -126,15 +137,17 @@ class Bridge(object):
         # Make REST calls to delete the connection
         self.remove_connection_REST_helper(vport)
 
+        self.connections.remove(cxn)
+
     def remove_connection_REST_helper(self, vport):
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
-        response = requests.delete(url+'api/v1/bridges/'+self.name+
-                                   '/tunnels/'+vport,
+        response = requests.delete(base_url+'/api/v1/bridges/'+self.name+
+                                   '/tunnels/'+str(vport),
                                  headers={'authorization':rest_key},
                                  verify=False) #FIXME: fixed value
 
-        if response.status_code != 10000: #FIXME - What's the good number?
+        if response.status_code != 204:
             #ERROR!
             raise Exception("_remove_connection Response %d: %s" %
                             (response.status_code, str(response)))
@@ -150,8 +163,8 @@ class Bridge(object):
     def to_json(self):
         '''
         {
-            'bridge':'sw1'
-            'href': 'https://1.2.3.4/switches/corsa-a/bridges/sw1',
+            'bridge':'br1'
+            'href': 'https://1.2.3.4/switches/corsa-a/bridges/br1',
             'controller-addr': '2.3.4.5',
             'controller-port': '6633',
             'dpid': 'abcdef12345678',
