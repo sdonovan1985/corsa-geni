@@ -4,7 +4,7 @@
 
 import requests
 import json
-from connection import Connection
+from tunnel import Tunnel
 from connection_info import ConnectionInfo
 
 # Disable warnings #FIXME!
@@ -24,18 +24,18 @@ class Bridge(object):
          - HTTP connection info (private) - Inherited from Switch
            - IP or URL
            - Security info - REST API key  
-         - List of connections
+         - List of tunnelss
     ''' 
     def __init__(self, name, href, connection,
                  dpid=None, controller_addr=None, controller_port=None,
-                 connections=[]):
+                 tunnels=[]):
         self.name = name
         self.href = href
         self.connection = connection
         self.dpid = dpid
         self.controller_addr = controller_addr
         self.controller_port = controller_port
-        self.connections = connections
+        self.tunnels = tunnels
         self.current_vport = 0
 
     def __str__(self):
@@ -44,8 +44,8 @@ class Bridge(object):
                                                           self.dpid,
                                                           self.controller_addr,
                                                           self.controller_port)
-        retstr += "\n  CONNECTIONS:"
-        for cxn in self.connections:
+        retstr += "\n  TUNNELS:"
+        for cxn in self.tunnels:
             retstr += "\n    %s" % str(cxn)
         return retstr
 
@@ -70,41 +70,41 @@ class Bridge(object):
     def get_controller_port(self):
         return self.controller_port
 
-    def get_connections(self):
-        return self.connections
+    def get_tunnels(self):
+        return self.tunnels
 
-    def add_connection(self, dstname, physport, dstvlan):
+    def add_tunnel(self, dstname, physport, dstvlan):
         # NOTE: this doesn't check for whether or not this is a valid thing to
         # do. The user of this function should be confirming with the switch
         # that a particular VLAN/Port combination is valid.
 
-        # Make sure there isn't already a 'dstname' in the connections list
-        for cxn in self.connections:
+        # Make sure there isn't already a 'dstname' in the tunnels list
+        for cxn in self.tunnels:
             if cxn.get_name() == dstname:
                 cxn_names = []
-                for c in self.connections:
+                for c in self.tunnels:
                     cxn_names.append(c.get_name())
                 
-                raise Exception("%s already exists as a connection name: %s" %
+                raise Exception("%s already exists as a tunnel name: %s" %
                                 (dstname, cxn_names))
         
         # Find open virtual port number
         self.current_vport += 1
         vport = self.current_vport
 
-        # Create the Connection object
-        connection_href = self.href + "/connections/" + str(dstname)
-        cxn = Connection(connection_href, dstname, physport, dstvlan, vport)
+        # Create the Tunnel object
+        tunnel_href = self.href + "/tunnels/" + str(dstname)
+        tunnel = Tunnel(tunnel_href, dstname, physport, dstvlan, vport)
 
-        # Make REST calls to instantiate this new connection
-        self.add_connection_REST_helper(physport, vport, dstvlan)
+        # Make REST calls to instantiate this new tunnel
+        self.add_tunnel_REST_helper(physport, vport, dstvlan)
         
-        # Finally, add it ot the local list of bridges
-        self.connections.append(cxn)
+        # Finally, add it to the local list of tunnels
+        self.tunnels.append(tunnel)
 
-        return cxn
+        return tunnel
 
-    def add_connection_REST_helper(self, port, vport, vlan_id):
+    def add_tunnel_REST_helper(self, port, vport, vlan_id):
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.post(base_url+'/api/v1/bridges/'+self.name+'/tunnels',
@@ -116,30 +116,30 @@ class Bridge(object):
 
         if response.status_code != 201:
             #ERROR!
-            raise Exception("_add_connection Response %d: %s" %
+            raise Exception("_add_tunnel Response %d: %s" %
                             (response.status_code, json.dumps(response.json())))
         return response # May not be used
 
-    def remove_connection(self, dstname):
-        # NOTE: this doesn't check to see if the connection already exists on
+    def remove_tunnel(self, dstname):
+        # NOTE: this doesn't check to see if the tunnel already exists on
         # the bridge (it does check if it exists in the Bridge data structure).
 
-        # Find the connection in the local list of connections
+        # Find the tunnel in the local list of tunnels
         vport = None
-        for cxn in self.connections:
-            if cxn.get_name() == dstname:
-                vport = cxn.get_virtual_port()
+        for tunnel in self.tunnels:
+            if tunnel.get_name() == dstname:
+                vport = tunnel.get_virtual_port()
                 break
         if vport == None:
-            raise Exception("dstname %s doesn't exist in connections:\n%s" %
-                            (dstname, self.connections))
+            raise Exception("dstname %s doesn't exist in tunnels:\n%s" %
+                            (dstname, self.tunnels))
 
-        # Make REST calls to delete the connection
-        self.remove_connection_REST_helper(vport)
+        # Make REST calls to delete the tunnel
+        self.remove_tunnel_REST_helper(vport)
 
-        self.connections.remove(cxn)
+        self.tunnels.remove(tunnel)
 
-    def remove_connection_REST_helper(self, vport):
+    def remove_tunnel_REST_helper(self, vport):
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.delete(base_url+'/api/v1/bridges/'+self.name+
@@ -149,7 +149,7 @@ class Bridge(object):
 
         if response.status_code != 204:
             #ERROR!
-            raise Exception("_remove_connection Response %d: %s" %
+            raise Exception("_remove_tunnel Response %d: %s" %
                             (response.status_code, str(response)))
         return response # May not be used
     
@@ -168,16 +168,16 @@ class Bridge(object):
             'controller-addr': '2.3.4.5',
             'controller-port': '6633',
             'dpid': 'abcdef12345678',
-            'connections':
+            'tunnels':
               [
-                <connection1>,
-                <connection2>,
+                <tunnel1>,
+                <tunnel2>,
               ]
         }
         '''
-        connection_json = []
-        for cxn in self.connections:
-            connection_json.append(cxn.to_json())
+        tunnel_json = []
+        for cxn in self.tunnels:
+            tunnel_json.append(cxn.to_json())
 
         retval = {
             'bridge':self.name,
@@ -185,7 +185,7 @@ class Bridge(object):
             'controller-addr': self.controller_addr,
             'controller-port': self.controller_port,
             'dpid': self.dpid,
-            'connections': connection_json
+            'tunnels': tunnel_json
         } 
         
         return retval

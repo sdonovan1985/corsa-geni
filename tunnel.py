@@ -1,11 +1,11 @@
 # Copyright Sean Donovan, Joaquin Chung
 # Corsa-at-GENI project
 
-class Connection(object):
-    ''' A connection describes how a bridge's virtual port is mapped to its
+class Tunnel(object):
+    ''' A tunnel describes how a bridge's virtual port is mapped to its
         switch's physical port/VLAN combination
         
-        Connection
+        Tunnel
          - Address
          - Destination Name
          - Destination Physical Port
@@ -46,15 +46,15 @@ class Connection(object):
     def to_json(self):
         '''
         {
-            'connection':'clemson',
-            'href':'https://1.2.3.4/switches/corsa-a/bridges/br1/connections/clemson',
+            'tunnel':'clemson',
+            'href':'https://1.2.3.4/switches/corsa-a/bridges/br1/tunnels/clemson',
             'physical-port':3,
             'vlan':3535,
             'virtual-port':6,
         }
         '''
         retval = {
-            'connection':self.name,
+            'tunnel':self.name,
             'href':self.href,
             'physical-port':self.physport,
             'vlan':self.vlan,

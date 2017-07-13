@@ -6,11 +6,11 @@ import json
 from threading import Timer, Lock, Thread
 from datetime import datetime, timedelta
 
-from bridge import Bridge
-from connection import Connection
+from connection_info import ConnectionInfo
 from switch import Switch
 from neighbor import Neighbor
-from connection_info import ConnectionInfo
+from bridge import Bridge
+from tunnel import Tunnel
 
 
 class CorsaAdaptor(object):
@@ -62,8 +62,6 @@ class CorsaAdaptor(object):
 
         self.base_url = data['adaptor-href-base']
 
-        print json.dumps(data, indent=2)
-        
         for switch in data['switches']:
             switch_name = switch['name']
             connection_info = switch['connection-info']
@@ -113,10 +111,10 @@ class CorsaAdaptor(object):
                 return b
         return None
 
-    def get_connection(self, switch_name, bridge_name, connection_name):
+    def get_tunnel(self, switch_name, bridge_name, tunnel_name):
         bridge = self.get_bridge(switch_name, bridge_name)
-        for c in bridge.get_connections():
-            if c.get_name() == connection_name:
+        for c in bridge.get_tunnels():
+            if c.get_name() == tunnel_name:
                 return c
         return None
         
@@ -155,13 +153,13 @@ def testing(adaptor):
     br = adaptor.get_bridge("sox-switch", "br50")
     print br
     
-    br.add_connection("temp1", 1,  2000)
-    br.add_connection("temp2", 1,  2001)
+    br.add_tunnel("temp1", 1,  2000)
+    br.add_tunnel("temp2", 1,  2001)
 
     print br
 
     # Delete tunnel
-    br.remove_connection("temp1")
+    br.remove_tunnel("temp1")
 
     print br
     
