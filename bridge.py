@@ -12,7 +12,7 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-class Bridge(object):
+class Bridge:
     ''' The Bridge object tracks and manages virtual switch objects. 
         Bridge
          - Name
@@ -35,7 +35,7 @@ class Bridge(object):
         self.dpid = dpid
         self.controller_addr = controller_addr
         self.controller_port = controller_port
-        self.tunnels = tunnels
+        self.tunnels = list(tunnels)
         self.current_vport = 0
 
     def __str__(self):
@@ -79,14 +79,14 @@ class Bridge(object):
         # that a particular VLAN/Port combination is valid.
 
         # Make sure there isn't already a 'dstname' in the tunnels list
-        for cxn in self.tunnels:
-            if cxn.get_name() == dstname:
-                cxn_names = []
-                for c in self.tunnels:
-                    cxn_names.append(c.get_name())
+        for tunnel in self.tunnels:
+            if tunnel.get_name() == dstname:
+                tunnel_names = []
+                for t in self.tunnels:
+                    tunnel_names.append(t.get_name())
                 
                 raise Exception("%s already exists as a tunnel name: %s" %
-                                (dstname, cxn_names))
+                                (dstname, tunnel_names))
         
         # Find open virtual port number
         self.current_vport += 1
