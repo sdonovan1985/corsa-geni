@@ -103,6 +103,7 @@ class Switch(object):
 
         # Make REST calls to instantiate this new bridge
         self._create_bridge_REST_helper(bridge)
+        self._set_controller_REST_helper(bridge)
         
         # Finally, add it to the local list of bridges
         self.bridges.append(bridge)
@@ -125,6 +126,24 @@ class Switch(object):
             raise Exception("_add_bridge Response %d: %s" %
                             (response.status_code, json.dumps(response.json())))
         return response # May not be used
+
+    def _set_controller_REST_helper(self, bridge):
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+        response = requests.post(base_url+'/api/v1/bridges/'+bridge.get_name()+"/controllers",
+                                 {'controller':'ADAPTOR',
+                                  'ip':bridge.get_controller_addr(),
+                                  'port':bridge.get_controller_port()},
+                                 headers={'Authorization':rest_key},
+                                 verify=False) #FIXME: fixed value
+        if response.status_code != 201:
+            #ERROR!
+            raise Exception("_set_controller Response %d: %s" %
+                            (response.status_code, json.dumps(response.json())))
+        return response # May not be used
+
+                                 
+
 
     def remove_bridge(self, name):
         bridge = None
