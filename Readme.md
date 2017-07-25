@@ -1,4 +1,4 @@
-#CORSA-GENI ADAPTOR!
+# CORSA-GENI ADAPTOR!
 
 The Corsa-GENI adaptor is a simple tool for creating virtual switches (*bridges*), connecting those virtual switches through virtual ports to physical ports (*tunnels*) on a Corsa switch. There is a REST API, which can be seen by looking at the corsa_adaptor.py file. 
 
