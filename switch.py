@@ -18,6 +18,7 @@ class Switch(object):
         Switch
          - Name
          - Address (REST address, e.g., /app/switches/sw1)
+         - Send rest boolean
          - List of neighbors
          - List of bridges
          - HTTP connection info (private)
@@ -25,10 +26,11 @@ class Switch(object):
            - Security info - REST API key 
     '''
 
-    def __init__(self, name, href,
+    def __init__(self, name, href, dont_send_rest,
                  neighbors=[], bridges=[], connection=None):
         self.name = name
         self.href = href
+        self.dont_send_rest = dont_send_rest
         self.neighbors = neighbors
         self.bridges = bridges
         self.connection = connection
@@ -81,6 +83,9 @@ class Switch(object):
         return bridge_list
 
     def _get_bridge_REST_helper(self):
+        if self.dont_send_rest:
+            return
+        
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.get(base_url+'/api/v1/bridges',
@@ -98,7 +103,7 @@ class Switch(object):
     def create_bridge(self, name,
                       controller_addr=None, controller_port=None, dpid=None):
         bridge_href = self.href + "/bridges/" + name
-        bridge = Bridge(name, bridge_href, self.connection,
+        bridge = Bridge(name, bridge_href, self.dont_send_rest, self.connection,
                         dpid, controller_addr, controller_port)
 
         # Make REST calls to instantiate this new bridge
@@ -111,6 +116,9 @@ class Switch(object):
         return bridge
         
     def _create_bridge_REST_helper(self, bridge):
+        if self.dont_send_rest:
+            return
+
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.post(base_url+'/api/v1/bridges',
@@ -128,6 +136,9 @@ class Switch(object):
         return response # May not be used
 
     def _set_controller_REST_helper(self, bridge):
+        if self.dont_send_rest:
+            return
+
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.post(base_url+'/api/v1/bridges/'+bridge.get_name()+"/controllers",
@@ -162,6 +173,9 @@ class Switch(object):
         self.bridges.remove(bridge)
 
     def _remove_bridge_REST_helper(self, bridge):
+        if self.dont_send_rest:
+            return
+
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.delete(base_url+'/api/v1/bridges/'+str(bridge.get_name()),

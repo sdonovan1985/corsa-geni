@@ -25,6 +25,9 @@ class CorsaAdaptor(object):
         # Setup local storage
         self.switches = {}
         
+        # Should we send anything to switches?
+        self.no_switch = options.no_switch
+
         # Parse Config File. The following will be set:
         #   - self.base_url
         self._parse_config_file(options.config)
@@ -32,6 +35,7 @@ class CorsaAdaptor(object):
         # Setup Flask configuration stuff
         self.host = options.host
         self.port = options.port
+
 
         pass
 
@@ -71,7 +75,7 @@ class CorsaAdaptor(object):
             switch_href = self.base_url + "switches/" + switch_name
             
             # Create Switch object
-            switch = Switch(switch_name, switch_href)
+            switch = Switch(switch_name, switch_href, self.no_switch)
             
             # Create the ConnectionInfo object and add it to the switch
             cxn_info_object = ConnectionInfo(connection_info['address'],
@@ -324,6 +328,11 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--port", dest="port", type=int,
                         action="store", help="Specifes the port to use",
                         default=5000)
+
+    parser.add_argument("-n", "--no-switch", dest="no_switch", default=False,
+                        action="store_true",
+                        help="Run without attached Corsa Switch")
+                        
     
                         
 

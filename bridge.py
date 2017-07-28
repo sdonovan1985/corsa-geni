@@ -17,6 +17,7 @@ class Bridge:
         Bridge
          - Name
          - Address
+         - Send rest boolean
          - DPID
          - Controller info
            - IP or URL
@@ -26,11 +27,12 @@ class Bridge:
            - Security info - REST API key  
          - List of tunnelss
     ''' 
-    def __init__(self, name, href, connection,
+    def __init__(self, name, href, dont_send_rest, connection,
                  dpid=None, controller_addr=None, controller_port=None,
                  tunnels=[]):
         self.name = name
         self.href = href
+        self.dont_send_rest = dont_send_rest
         self.connection = connection
         self.dpid = dpid
         self.controller_addr = controller_addr
@@ -105,6 +107,9 @@ class Bridge:
         return tunnel
 
     def add_tunnel_REST_helper(self, port, vport, vlan_id):
+        if self.dont_send_rest:
+            return
+
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.post(base_url+'/api/v1/bridges/'+self.name+'/tunnels',
@@ -140,6 +145,9 @@ class Bridge:
         self.tunnels.remove(tunnel)
 
     def remove_tunnel_REST_helper(self, vport):
+        if self.dont_send_rest:
+            return
+
         base_url = self.connection.get_address()
         rest_key = self.connection.get_rest_key()
         response = requests.delete(base_url+'/api/v1/bridges/'+self.name+
