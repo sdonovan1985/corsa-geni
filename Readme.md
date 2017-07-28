@@ -33,5 +33,11 @@ Once running, you can then run the application itself, while pointing to the cor
 cd corsa-geni/; python corsa_adaptor.py -c ../corsa-a.config
 ```
 
+To run the application *without* connecting to a physical switch, run with the following command:
+
+```
+cd corsa-geni/; python corsa_adaptor.p -c ../corsa-a.config -n
+```
+
 On the host machine, you can use the REST API on 127.0.0.1:5000 using either a browser, cURL, or a controller application.
 
