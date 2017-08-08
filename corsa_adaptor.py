@@ -131,6 +131,7 @@ class CorsaAdaptor(object):
 
         @app.route('/api/v1/switches', strict_slashes=False, methods=['GET'])
         def flask_switches_get():
+            print "flask_switches_get"
             sw_dict = {}
             for key in self.switches.keys():
                 sw_dict[key] = self.switches[key].to_json()
@@ -140,12 +141,14 @@ class CorsaAdaptor(object):
         @app.route('/api/v1/switches/<switch>',
                    strict_slashes=False, methods=['GET'])
         def flask_specific_switch_get(switch):
+            print "flask_specific_switch_get"
             sw = self.get_switch(switch)
             return jsonify(sw.to_json())
 
         @app.route('/api/v1/switches/<switch>/neighbors',
                    strict_slashes=False, methods=['GET'])
         def flask_neighbors_get(switch):
+            print "flask_neighbors_get"
             sw = self.get_switch(switch)
             n_dict = {}
             for n in sw.get_neighbors():
@@ -157,21 +160,25 @@ class CorsaAdaptor(object):
         @app.route('/api/v1/switches/<switch>/neighbors/<neighbor>',
                    strict_slashes=False, methods=['GET'])
         def flask_specific_neighbor_get(switch, neighbor):
+            print "flask_specific_neighbor_get"
             n = self.get_neighbor(switch, neighbor)
             return jsonify(n.to_json())
 
         @app.route('/api/v1/switches/<switch>/bridges',
                    strict_slashes=False, methods=['GET'])
         def flask_bridges_get(switch):
+            print "flask_bridges_get"
             sw = self.get_switch(switch)
             b_dict = {}
             for b in sw.get_bridges():
                 b_dict[b.get_name()] = b.to_json()
             return jsonify(b_dict)
+        
         #curl -i -H "Content-Type: application/json" -X POST -d '{"name":"br52", "controller_addr":"1.2.3.4", "controller_port":6633, "dpid":1234}' http://localhost:5000/api/v1/switches/sox-switch/bridges/
         @app.route('/api/v1/switches/<switch>/bridges',
                    strict_slashes=False, methods=['POST'])
         def flask_bridges_post(switch):
+            print "flask_bridges_post"
             if (not request.json or not 'name' in request.json):
                 return make_response(jsonify({'error':'improper format, requires name %s' % request.json}),
                                      400)
@@ -182,6 +189,7 @@ class CorsaAdaptor(object):
         @app.route('/api/v1/switches/<switch>/bridges/<bridge>',
                    strict_slashes=False, methods=['GET'])
         def flask_specific_bridge_get(switch, bridge):
+            print "flask_specific_bridge_get"
             b = self.get_bridge(switch, bridge)
             return jsonify(b.to_json())
 
@@ -189,6 +197,7 @@ class CorsaAdaptor(object):
         @app.route('/api/v1/switches/<switch>/bridges/<bridge>',
                    strict_slashes=False, methods=['DELETE'])
         def flask_specific_bridge_delete(switch, bridge):
+            print "flask_specific_bridge_delete"
             sw = self.get_switch(switch)
             sw.remove_bridge(bridge)
             return make_response(jsonify({'success':'deleted %s:%s' %
@@ -197,6 +206,7 @@ class CorsaAdaptor(object):
         @app.route('/api/v1/switches/<switch>/bridges/<bridge>/tunnels',
                    strict_slashes=False, methods=['GET'])
         def flask_tunnels_get(switch, bridge):
+            print "flask_tunnels_get"
             b = self.get_bridge(switch, bridge)
             t_dict = {}
             for t in b.get_tunnels():
@@ -233,8 +243,32 @@ class CorsaAdaptor(object):
                                           (switch, bridge, tunnel)}), 204)
         
 
+        #curl http://localhost:5000/corsa/switch/sox-switch/bigredbutton
+        @app.route('/corsa/switch/<switch>/bigredbutton',
+                   strict_slashes=False, methods=['GET'])
+        def flask_big_red_button(switch):
+            print "RECEIVED BIG RED BUTTON CALL FOR %s" % switch
+            sw = self.get_switch(switch)
+            sw.big_red_button()
+            return make_response(jsonify({'success':"All switches and tunnels deleted."}), 200)            
+        
+
+        #curl http://localhost:5000/corsa/switch/sox-switch/api/v1/bridges/br52/tunnels
+        @app.route('/corsa/switch/<switch>/<path:path>',
+                   strict_slashes=False, methods=['GET'])
+        def flask_get_corsa_stuff(switch, path):
+            print "Corsa API request on switch %s: \"%s\"" % (switch,path)
+            sw = self.get_switch(switch)
+            retval = sw.corsa_api_get(path)
+            return make_response(jsonify(retval), 200)
+
+
+        
         print "STARTING APP.RUN"
         app.run(host=self.host, port=self.port)
+
+
+                   
 
 
 # FLASK Endpoints

@@ -224,3 +224,53 @@ class Switch(object):
         return retval
             
 
+    def corsa_api_get(self, path):
+        if self.dont_send_rest:
+            return
+
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+        # The "/" is because the leading "/" will be stripped out of the path.
+        response = requests.get(base_url + "/" + str(path),
+                                headers={'Authorization':rest_key},
+                                verify=False)
+        print response.json()
+        return response.json()
+
+    def big_red_button(self):
+        ''' This cleans up everything on a switch. More than a little dangerous.
+        '''
+        if self.dont_send_rest:
+            return
+
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+
+        # Get all bridges - based on _get_bridge_REST_helper()
+        response = requests.get(base_url+'/api/v1/bridges',
+                                headers={'Authorization':rest_key},
+                                verify=False)
+        bridge_links = {}
+        for entry in response.json()['links']:
+            bridge_links[str(entry)] = str(response.json()['links'][entry]['href'])
+
+        # for each bridge, delete all tunnels then delete the bridge itself.
+        for bridge in bridge_links.keys():
+            bridge_href = bridge_links[bridge]
+
+            # Get all tunnels:
+            response = requests.get(bridge_href + "/tunnels",
+                                    headers={'Authorization':rest_key},
+                                    verify=False)
+
+            # For each tunnel, delete
+            for entry in response.json()['links']:
+                requests.delete(response.json()['links'][entry]['href'],
+                                headers={'Authorization':rest_key},
+                                verify=False)
+            
+            # Delete bridge
+            requests.delete(bridge_href,
+                            headers={'Authorization':rest_key},
+                            verify=False)
+            
