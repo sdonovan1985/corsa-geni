@@ -91,7 +91,7 @@ class CorsaAdaptor(object):
                 neighbor_vlans = neighbor['vlans']
                 neighbor_href = switch_href + "/neighbors/" + neighbor_name
                 neighbor_object = Neighbor(neighbor_name, neighbor_href,
-                                           neighbor_physport, neighbor_vlans,
+                                           neighbor_vlans, neighbor_physport,
                                            neighbor_type)
 
                 switch.add_neighbor(neighbor_object)
