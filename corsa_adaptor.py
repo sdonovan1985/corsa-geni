@@ -195,7 +195,7 @@ class CorsaAdaptor(object):
                                      400)
             sw = self.get_switch(switch)
             br = sw.create_bridge(**request.json)
-            return jsonify({request.json['name']:br.to_json()})        
+            return jsonify({br.get_name():br.to_json()})        
 
         @app.route('/api/v1/switches/<switch>/bridges/urn/<bridge>',
                    strict_slashes=False, methods=['GET'])
