@@ -27,11 +27,12 @@ class Bridge:
            - Security info - REST API key  
          - List of tunnelss
     ''' 
-    def __init__(self, name, href, dont_send_rest, connection,
+    def __init__(self, name, href, urn, dont_send_rest, connection,
                  dpid=None, controller_addr=None, controller_port=None,
                  tunnels=[]):
         self.name = name
         self.href = href
+        self.urn = urn
         self.dont_send_rest = dont_send_rest
         self.connection = connection
         self.dpid = dpid
@@ -41,7 +42,8 @@ class Bridge:
         self.current_vport = 0
 
     def __str__(self):
-        retstr = "BRIDGE %s\n%s, DPID: %s, Controller: %s:%d" % (self.href,
+        retstr = "BRIDGE %s\n%s\n%s, DPID: %s, Controller: %s:%d" % (self.href,
+                                                          self.urn,
                                                           self.name,
                                                           self.dpid,
                                                           self.controller_addr,
@@ -59,6 +61,9 @@ class Bridge:
 
     def get_href(self):
         return self.href
+
+    def get_urn(self):
+        return self.urn
 
     def get_connection_info(self):
         return self.connection
@@ -173,6 +178,7 @@ class Bridge:
         {
             'bridge':'br1'
             'href': 'https://1.2.3.4/switches/corsa-a/bridges/br1',
+            'urn': 'asdfqwerupo8iu12p3o4idsndinpvoin23in',
             'controller-addr': '2.3.4.5',
             'controller-port': '6633',
             'dpid': 'abcdef12345678',
@@ -190,6 +196,7 @@ class Bridge:
         retval = {
             'bridge':self.name,
             'href': self.href,
+            'urn': self.urn,
             'controller-addr': self.controller_addr,
             'controller-port': self.controller_port,
             'dpid': self.dpid,

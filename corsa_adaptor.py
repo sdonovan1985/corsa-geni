@@ -59,6 +59,7 @@ class CorsaAdaptor(object):
             Config file has information for Switches
              - Name
              - Connection info 
+             - List of reserved bridge numbers
              - Neighbors
         '''
         with open(config_file) as data_file:
@@ -69,6 +70,7 @@ class CorsaAdaptor(object):
         for switch in data['switches']:
             switch_name = switch['name']
             connection_info = switch['connection-info']
+            reserved_bridges = switch['reserved-bridges']
             neighbors = switch['neighbors']
 
             # Determine the correct href for the switch we're creating
@@ -82,6 +84,8 @@ class CorsaAdaptor(object):
                                              connection_info['rest_key'])
             switch.set_connection_info(cxn_info_object)
 
+            # Add list of reserved bridges
+            switch.set_reserved_bridges(reserved_bridges)
 
             # Create all the neighbors and add them to the switch object
             for neighbor in neighbors:
@@ -112,6 +116,13 @@ class CorsaAdaptor(object):
         bridges = self.get_switch(switch_name).get_bridges()
         for b in bridges:
             if b.get_name() == bridge_name:
+                return b
+        return None
+
+    def get_bridge_by_urn(self, switch_name, bridge_urn):
+        bridges = self.get_switch(switch_name).get_bridges()
+        for b in bridges:
+            if b.get_urn() == bridge_urn:
                 return b
         return None
 
@@ -174,17 +185,24 @@ class CorsaAdaptor(object):
                 b_dict[b.get_name()] = b.to_json()
             return jsonify(b_dict)
         
-        #curl -i -H "Content-Type: application/json" -X POST -d '{"name":"br52", "controller_addr":"1.2.3.4", "controller_port":6633, "dpid":1234}' http://localhost:5000/api/v1/switches/sox-switch/bridges/
+        #curl -i -H "Content-Type: application/json" -X POST -d '{"urn":"qwertyuiopasdfhkgjdflkj", "controller_addr":"1.2.3.4", "controller_port":6633, "dpid":1234}' http://localhost:5000/api/v1/switches/sox-switch/bridges/
         @app.route('/api/v1/switches/<switch>/bridges',
                    strict_slashes=False, methods=['POST'])
         def flask_bridges_post(switch):
             print "flask_bridges_post"
-            if (not request.json or not 'name' in request.json):
+            if (not request.json or not 'urn' in request.json):
                 return make_response(jsonify({'error':'improper format, requires name %s' % request.json}),
                                      400)
             sw = self.get_switch(switch)
             br = sw.create_bridge(**request.json)
             return jsonify({request.json['name']:br.to_json()})        
+
+        @app.route('/api/v1/switches/<switch>/bridges/urn/<bridge>',
+                   strict_slashes=False, methods=['GET'])
+        def flask_specific_bridge_by_urn_get(switch, bridge):
+            print "flask_specific_bridge_by_urn_get"
+            b = self.get_bridge_by_urn(switch, bridge)
+            return jsonify(b.to_json())        
 
         @app.route('/api/v1/switches/<switch>/bridges/<bridge>',
                    strict_slashes=False, methods=['GET'])
@@ -192,7 +210,7 @@ class CorsaAdaptor(object):
             print "flask_specific_bridge_get"
             b = self.get_bridge(switch, bridge)
             return jsonify(b.to_json())
-
+        
         #curl -i -H "Content-Type: application/json" -X DELETE http://localhost:5000/api/v1/switches/sox-switch/bridges/br52
         @app.route('/api/v1/switches/<switch>/bridges/<bridge>',
                    strict_slashes=False, methods=['DELETE'])
@@ -287,8 +305,8 @@ def testing(adaptor):
 
 
     # Create bridge
-    sw.create_bridge("br50", "10.2.3.4", 6633, "100000")
-    
+    br = sw.create_bridge("123456789", "10.2.3.4", 6633, "100000")
+
     print "CREATED NEW BRIDGE:\n%s" % sw
     
     print "\n\n\n\n"
@@ -298,7 +316,6 @@ def testing(adaptor):
     
     
     # Create tunnel
-    br = adaptor.get_bridge("sox-switch", "br50")
     print br
     
     br.add_tunnel("temp1", 1,  2000)
@@ -313,7 +330,7 @@ def testing(adaptor):
     
     
     # Cleanup!
-    sw.remove_bridge("br50")
+    sw.remove_bridge("123456789")
     print sw
     
     print "\n\n\n\n"
@@ -325,8 +342,8 @@ def REST_setup_for_testing(adaptor):
     # Add a few bridges and tunnels for REST testing
     sw = adaptor.get_switch("sox-switch")
     
-    br1 = sw.create_bridge("br50", "10.2.3.4", 6633, "100000")
-    br2 = sw.create_bridge("br51", "10.2.3.4", 6634, "100001")
+    br1 = sw.create_bridge("123456789", "10.2.3.4", 6633, "100000")
+    br2 = sw.create_bridge("qwertyiu", "10.2.3.4", 6634, "100001")
 
     br1.add_tunnel("temp1", 1,  2000)
     br1.add_tunnel("temp2", 1,  2001)
@@ -337,6 +354,7 @@ def REST_setup_for_testing(adaptor):
 
     print "br1 tunnels: %s" % br1.get_tunnels()
     print "br2 tunnels: %s" % br2.get_tunnels()
+    print "bridge_ht: %s" % sw._get_bridge_ht()
 
     print "SETUP COMPLETE"
 
@@ -379,10 +397,12 @@ if __name__ == '__main__':
 
     adaptor = CorsaAdaptor(options)
 
+    # For manual testing
     #REST_setup_for_testing(adaptor)
     
     adaptor.main_loop()
 
+    # For semi-automated testing.
     #testing(adaptor)
 
 

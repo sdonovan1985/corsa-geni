@@ -7,6 +7,7 @@ from neighbor import Neighbor
 import re
 import requests
 import json
+import hashlib
 
 # Disable warnings #FIXME!
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -27,13 +28,20 @@ class Switch(object):
     '''
 
     def __init__(self, name, href, dont_send_rest,
-                 neighbors=[], bridges=[], connection=None):
+                 neighbors=[], bridges=[], connection=None, max_br=100):
         self.name = name
         self.href = href
         self.dont_send_rest = dont_send_rest
         self.neighbors = neighbors
         self.bridges = bridges
         self.connection = connection
+        self.max_br = max_br
+
+        # bridge_ht is a handmade hashtable. It's used to reserve br number.
+        self.bridge_ht = [None] * self.max_br
+        self.bridge_ht[0] = 'reserved' # 0 is always reserved.
+
+
 
     def __str__(self):
         retstr  = "SWITCH: %s\n" % self.name
@@ -72,6 +80,15 @@ class Switch(object):
                             type(cxn_info), str(ConnectionInfo))
         self.connection = cxn_info
 
+    def set_reserved_bridges(self, list_of_bridges):
+        for bridge in list_of_bridges:
+            if (self.bridge_ht[bridge] != None):
+                raise Exception("set_reserved_bridges: bridge %d is already reserved: %s" % (bridge, self.bridge_ht[bridge]))
+            self.bridge_ht[bridge] = "reserved"
+
+    def _get_bridge_ht(self):
+        return self.bridge_ht
+
     def add_neighbor(self, neighbor):
         self.neighbors.append(neighbor)
 
@@ -100,10 +117,14 @@ class Switch(object):
 
         return bridge_list
         
-    def create_bridge(self, name,
+    def create_bridge(self, urn,
                       controller_addr=None, controller_port=None, dpid=None):
+        # Figure out the bridge's name. This involves a helper function
+        name = self._get_and_reserve_br_name(urn)
+
         bridge_href = self.href + "/bridges/" + name
-        bridge = Bridge(name, bridge_href, self.dont_send_rest, self.connection,
+        bridge = Bridge(name, bridge_href, urn,
+                        self.dont_send_rest, self.connection,
                         dpid, controller_addr, controller_port)
 
         # Make REST calls to instantiate this new bridge
@@ -114,6 +135,36 @@ class Switch(object):
         self.bridges.append(bridge)
 
         return bridge
+    def _get_and_reserve_br_name(self, urn):
+        orig_hash = int(hashlib.sha224(urn).hexdigest(), 16) % self.max_br
+
+        hash_number = orig_hash
+
+        while (self.bridge_ht[hash_number] != None or
+               self.bridge_ht[hash_number] == "reserved"):
+            print hash_number
+            hash_number += 1
+            if hash_number == self.max_br:
+                hash_number = 0
+            # We've looped all the way through. Not good.
+            if hash_number == orig_hash:
+                raise Exception("_get_and_reserve_br_name: Ran out of numbers (%d,%d): %s" % (hash_number, orig_hash, self.bridge_ht))
+
+        # Reserve
+        self.bridge_ht[hash_number] = urn
+
+        # Return
+        return "br%d" % hash_number
+
+    def _unreserve_br_name(self, name):
+        # Remove "br" from name (e.g., "br45") to get hash_number
+        hash_number = int(name[2:])
+        if ((self.bridge_ht[hash_number] == None) or
+            (self.bridge_ht[hash_number] == "reserved")):
+            raise Exception("_unreserve_br_name: bridge_ht[%d] is invalid: %s" % (hash_number, self.bridge_ht[hash_number]))
+
+        # Unreserve
+        self.bridge_ht[hash_number] = None
         
     def _create_bridge_REST_helper(self, bridge):
         if self.dont_send_rest:
@@ -167,7 +218,9 @@ class Switch(object):
                                                         self.get_bridges()))
         # Make REST calls to delete bridge
         self._remove_bridge_REST_helper(bridge)
-        
+
+        # Unreserve br number
+        self._unreserve_br_name(name)
 
         # Finally, remove from local list of bridges
         self.bridges.remove(bridge)
