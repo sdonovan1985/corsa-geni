@@ -37,6 +37,9 @@ class Neighbor(object):
     def get_type(self):
         return self.type
 
+    def get_physport(self):
+        return self.physport
+
     def to_json(self):
         '''
         {

@@ -41,6 +41,10 @@ class Switch(object):
         self.bridge_ht = [None] * self.max_br
         self.bridge_ht[0] = 'reserved' # 0 is always reserved.
 
+        # Configure neighboring ports for installed neighbors
+        for neighbor in self.neighbors:
+            self._configure_neighbor_ports(neighbor)
+
 
 
     def __str__(self):
@@ -91,6 +95,7 @@ class Switch(object):
 
     def add_neighbor(self, neighbor):
         self.neighbors.append(neighbor)
+        self._configure_neighbor_ports(neighbor)
 
     def get_bridge_list(self):
         # This is used for querying the switch for existing bridges that have
@@ -116,6 +121,22 @@ class Switch(object):
             bridge_list.append(entry)
 
         return bridge_list
+
+    def _configure_neighbor_ports(self, neighbor):
+        base_url = self.connection.get_address()
+        rest_key = self.connection.get_rest_key()
+        port = neighbor.get_physport()
+        response = requests.patch(base_url+'/api/v1/ports/'+str(port),
+                                  json=[{'op' : 'replace',
+                                         'path' : '/tunnel-mode',
+                                         'value' : 'ctag'}],
+                                  headers={'Authorization':rest_key},
+                                  verify=False) #FIXME: fixed value
+        if response.status_code != 204:
+            #ERROR!
+            raise Exception("_configure_neighbor_ports port %d, status %d: %s" %
+                            (port, response.status_code,
+                             json.dumps(response.json())))
         
     def create_bridge(self, urn,
                       controller_addr=None, controller_port=None, dpid=None):
