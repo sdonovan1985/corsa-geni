@@ -305,12 +305,22 @@ class Switch(object):
                                 verify=False)
         bridge_links = {}
         for entry in response.json()['links']:
-            bridge_links[str(entry)] = str(response.json()['links'][entry]['href'])
+            href = str(response.json()['links'][entry]['href'])
+            bridge_links[str(entry)] = href
 
+    
         # for each bridge, delete all tunnels then delete the bridge itself.
         for bridge in bridge_links.keys():
             bridge_href = bridge_links[bridge]
 
+            # If bridge is reserved, skip.
+            p = re.compile(".*/br([0-9]+)")
+            bridge_number = int(p.match(bridge_href).groups()[0])
+            if self.bridge_ht[bridge_number] == 'reserved':
+                print "Skipping reserved bridge br%d" % bridge_number
+                continue
+            self.bridge_ht[bridge_number] = None
+            
             # Get all tunnels:
             response = requests.get(bridge_href + "/tunnels",
                                     headers={'Authorization':rest_key},
